@@ -1,0 +1,6 @@
+.vscode/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cloud_loc
+cmake_install.cmake
