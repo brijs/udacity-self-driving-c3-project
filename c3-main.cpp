@@ -101,19 +101,14 @@ void drawCar(Pose pose, int num, Color color, double alpha, pcl::visualization::
 
 Eigen::Matrix4d NDT(pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt, PointCloudT::Ptr source, Pose startingPose, int iterations) {
 
-    pcl::console::TicToc time;
-    time.tic ();
-
     Eigen::Matrix4f init_guess = transform3D(startingPose.rotation.yaw, startingPose.rotation.pitch, startingPose.rotation.roll, startingPose.position.x, startingPose.position.y, startingPose.position.z).cast<float>();
 
     // Setting max number of registration iterations.
     ndt.setMaximumIterations (iterations);
     ndt.setInputSource (source);
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ndt (new pcl::PointCloud<pcl::PointXYZ>);
+    PointCloudT::Ptr cloud_ndt (new PointCloudT);
     ndt.align (*cloud_ndt, init_guess);
-
-    //cout << "Normal Distributions Transform has converged:" << ndt.hasConverged () << " score: " << ndt.getFitnessScore () <<  " time: " << time.toc() <<  " ms" << endl;
 
     Eigen::Matrix4d transformation_matrix = ndt.getFinalTransformation ().cast<double>();
 
@@ -225,20 +220,20 @@ int main(){
 			// TODO: (Filter scan using voxel filter) => cloudFiltered
 			pcl::VoxelGrid<PointT> vg;
 			vg.setInputCloud(scanCloud);
-			double filterRes = 0.5;
+			double filterRes = 0.3;
 			vg.setLeafSize(filterRes, filterRes, filterRes);
 			typename pcl::PointCloud<PointT>::Ptr cloudFiltered (new pcl::PointCloud<PointT>);
 			vg.filter(*cloudFiltered);
 
 			// TODO: Find pose transform by using ICP or NDT matching
 			pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
-			ndt.setTransformationEpsilon (.0001);
-			ndt.setStepSize (1);
-			ndt.setResolution (1);
+			ndt.setTransformationEpsilon (.001);
+			// ndt.setStepSize (1);
+			ndt.setResolution (5);
 			ndt.setInputTarget (mapCloud);
 
 			// get Updated Pose using NDT
-			Eigen::Matrix4d transform = NDT(ndt, cloudFiltered, pose, 3);
+			Eigen::Matrix4d transform = NDT(ndt, cloudFiltered, pose, 80);
 			pose = getPose(transform);
 
 			// TODO: Transform scan so it aligns with ego's actual pose and render that scan
